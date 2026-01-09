@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Environment Variables (SENSITIVE)
+.env
+
+# Logs
+npm-debug.log*
+logs
+*.log
+
+

@@ -59,24 +59,37 @@ const loginUser = async (req, res) => {
 };
 
 const getAllUsers = async (req, res) => {
-    try {
-      const allUsers = await User.find({})
-      res.status(200).json({allUsers})
-    } catch {
-      res.status(500).json({message: "Server error"})
-    };
+  try {
+    const allUsers = await User.find({});
+    res.status(200).json({ allUsers });
+  } catch {
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
 const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id)
+    const user = await User.findById(req.params.id);
     if (!user) {
-      return res.status(400).json({message: "User not found"})
+      return res.status(400).json({ message: "User not found" });
     }
-    res.status(200).json(user)
+    res.status(200).json(user);
   } catch {
-    res.status(500).json({message: "Server error"})
+    res.status(500).json({ message: "Server error" });
   }
-}
+};
 
-module.exports = { signupUser, loginUser, getAllUsers, getUserById };
+const deleteUser = async (req, res) => {
+  const { userIdToDelete } = req.params;
+  try {
+    const userToDelete = await User.findByIdAndDelete(userIdToDelete);
+    if (userToDelete) {
+      return res.status(404).json({ message: "Cannot find user" });
+    }
+    res.status(200).json({ message: "User deleted successfully!" });
+  } catch (err) {
+    res.status(500).json({ message: "Sever error", err });
+  }
+};
+
+module.exports = { signupUser, loginUser, getAllUsers, getUserById, deleteUser };

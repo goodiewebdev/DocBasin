@@ -8,7 +8,8 @@ const contactListSchema = new mongoose.Schema({
     },
     contact: [{
         type: mongoose.Schema.ObjectId,
-        ref: 'Contact'
+        ref: 'Contact',
+        required: true
     }]
 
 });

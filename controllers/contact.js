@@ -1,4 +1,5 @@
 const Contact = require('../models/contact.js');
+const ContactList = require('../models/contactlist.js');
 
 const createContact = async (req, res) => {
     const { name, email} = req.body;
@@ -7,6 +8,16 @@ const createContact = async (req, res) => {
         const newContact = new Contact({
             name, email, contactList: contactListId
         })
+
+        if (!email) {
+            res.status(400).json({message: "Email is required"})
+        }
+
+        const contactListExist = await ContactList.findById(contactListId)
+
+        if (!contactListExist) {
+            return res.status(404).json({message: "Could not find Contact List, Create a Contact List first."})
+        }
 
         await newContact.save();
         res.status(201).json(newContact)

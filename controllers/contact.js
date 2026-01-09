@@ -1,4 +1,3 @@
-const ContactList = require('../models/contactlist.js');
 const Contact = require('../models/contact.js');
 
 const createContact = async (req, res) => {

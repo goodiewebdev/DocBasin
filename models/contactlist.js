@@ -1,17 +1,19 @@
 const mongoose = require('mongoose');
-const Contact = require('./contact.js');
 
 const contactListSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true
     },
-    contact: [{
-        type: mongoose.Schema.ObjectId,
-        ref: 'Contact',
-        required: true
-    }]
-
+    user: {
+            type: mongoose.Schema.ObjectId,
+            ref: 'User',
+            require: true
+        },
+    createdAt: {
+        type: Date,
+        default: Date.now()
+    }
 });
 
 const ContactList = mongoose.model("ContactList", contactListSchema);

@@ -1,14 +1,29 @@
 const ContactList = require("../models/contactlist.js");
+const Contact = require("../models/contact.js");
+const User = require("../models/user.js");
 
 const createContactList = async (req, res) => {
-  const { name, contact } = req.body;
+  const { name } = req.body;
+  const user = User._id;
+
+  if (!user) {
+    return res.status(404).json({message: "User not found"})
+  }
 
   try {
-    const newContactList = new ContactList({
-      name,
-      contact,
-    });
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (user.role !== "user" && user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "You are not authorized to create a Contact List" });
+    }
 
+    const newContactList = new ContactList({
+      name, user
+    });
     await newContactList.save();
     res.status(201).json({ message: "New Contact List Added", newContactList });
   } catch {
@@ -19,17 +34,19 @@ const createContactList = async (req, res) => {
 const getContactListById = async (req, res) => {
   const { contactListId } = req.params;
 
-  try {
-    const contactListById = await ContactList.findById(contactListId).populate(
-      'contact'
-    );
-    if (!contactListById) {
-      return res.status(404).json({ message: "Cannot find Contact List" });
-    }
-    res.status(200).json(contactListById);
-  } catch (err) {
-    res.status(500).json({ message: "Server error", err });
+  const contactList = await ContactList.findById(contactListId);
+  if (!contactList) {
+    return res.status(404).json({ message: "Contact List not found" });
   }
+
+  const contacts = await Contact.find({
+    contactList: contactListId,
+  });
+
+  res.json({
+    ...contactList.toObject(),
+    contacts,
+  });
 };
 
 const getAllContactList = async (req, res) => {
@@ -56,4 +73,9 @@ const deleteContactList = async (req, res) => {
   }
 };
 
-module.exports = { createContactList, getContactListById, deleteContactList, getAllContactList };
+module.exports = {
+  createContactList,
+  getContactListById,
+  deleteContactList,
+  getAllContactList,
+};

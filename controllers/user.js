@@ -1,8 +1,8 @@
+require('dotenv').config();
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-//Signup user
 
 const signupUser = async (req, res) => {
   const { name, email, password, role } = req.body;
@@ -45,7 +45,7 @@ const loginUser = async (req, res) => {
 
     const token = jwt.sign(
       { userId: user._id, email: user.email },
-      "mysecretekeyrukky",
+      process.env.JWT_SECRET,
       { expiresIn: "23h" }
     );
 
@@ -55,6 +55,18 @@ const loginUser = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getLoggedInUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
@@ -92,4 +104,4 @@ const deleteUser = async (req, res) => {
   }
 };
 
-module.exports = { signupUser, loginUser, getAllUsers, getUserById, deleteUser };
+module.exports = { signupUser, loginUser, getAllUsers, getUserById, deleteUser, getLoggedInUser };

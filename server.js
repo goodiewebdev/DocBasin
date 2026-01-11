@@ -23,7 +23,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/contactlist', contactListRoutes);
 app.use('/api/contact', createContact);
 
-// Start the server
+
+
 app.listen(7000, () => {
   console.log("Server is running on port 7000");
 });

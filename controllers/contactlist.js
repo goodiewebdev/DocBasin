@@ -73,9 +73,51 @@ const deleteContactList = async (req, res) => {
   }
 };
 
+const getUserContactLists = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const userContactList = await ContactList.find({ user: userId }).sort({
+      createdAt: -1,
+    });
+
+    if (!userContactList) {
+      return res.status(404).json({message: "No Contact List found"})
+    }
+
+    res.status(200).json(userContactList);
+  } catch (err) {
+    console.error("Failed to fetch user's ContactList:", err);
+    res.status(500).json({ message: "Server error." });
+  }
+};
+
+const updateContactList = async (req, res) => {
+    const { contactListId } = req.params;
+    const { name } = req.body;
+
+    try {
+        const updatedContactList = await ContactList.findByIdAndUpdate(
+            contactListId,
+            { name },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedContactList) {
+            return res.status(404).json({ message: "Could not find contact list" });
+        }
+
+        res.status(200).json(updatedContactList);
+    } catch (err) {
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
 module.exports = {
   createContactList,
   getContactListById,
   deleteContactList,
   getAllContactList,
+  getUserContactLists,
+  updateContactList
 };

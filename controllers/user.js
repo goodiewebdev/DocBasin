@@ -44,7 +44,7 @@ const loginUser = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      { userId: user._id.toString(), role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "23h" }
     );
@@ -92,16 +92,67 @@ const getUserById = async (req, res) => {
 };
 
 const deleteUser = async (req, res) => {
-  const { userIdToDelete } = req.params;
+  const { userId } = req.params;
   try {
-    const userToDelete = await User.findByIdAndDelete(userIdToDelete);
-    if (userToDelete) {
+    if (req.user.userId !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Not authorized to delete this user" });
+    }
+
+    const userToDelete = await User.findByIdAndDelete(userId);
+    if (!userToDelete) {
       return res.status(404).json({ message: "Cannot find user" });
     }
+
     res.status(200).json({ message: "User deleted successfully!" });
   } catch (err) {
     res.status(500).json({ message: "Sever error", err });
   }
 };
 
-module.exports = { signupUser, loginUser, getAllUsers, getUserById, deleteUser, getLoggedInUser };
+const updateUser = async (req, res) => {
+  const { userId } = req.params;
+  const { name, email, password } = req.body;
+
+  try {
+    if (req.user.userId !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Not authorized to update this user" });
+    }
+
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+
+    if (password) {
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+      const saltRounds = 10;
+      updateData.password = await bcrypt.hash(password, saltRounds);
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, runValidators: true, select: '-password' }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      message: "User updated successfully",
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = { signupUser, loginUser, getAllUsers, getUserById, deleteUser, getLoggedInUser, updateUser };

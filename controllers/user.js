@@ -1,8 +1,7 @@
-require('dotenv').config();
+require("dotenv").config();
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-
 
 const signupUser = async (req, res) => {
   const { name, email, password, role } = req.body;
@@ -72,6 +71,9 @@ const getLoggedInUser = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
   try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized to get all users" });
+    }
     const allUsers = await User.find({});
     res.status(200).json({ allUsers });
   } catch {
@@ -80,7 +82,12 @@ const getAllUsers = async (req, res) => {
 };
 
 const getUserById = async (req, res) => {
+  const { userId } = req.params;
   try {
+    if (req.user.userId !== userId && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized to get this user" });
+    }
+
     const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(400).json({ message: "User not found" });
@@ -94,8 +101,10 @@ const getUserById = async (req, res) => {
 const deleteUser = async (req, res) => {
   const { userId } = req.params;
   try {
-    if (req.user.userId !== userId && req.user.role !== 'admin') {
-      return res.status(403).json({ message: "Not authorized to delete this user" });
+    if (req.user.userId !== userId && req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this user" });
     }
 
     const userToDelete = await User.findByIdAndDelete(userId);
@@ -114,8 +123,10 @@ const updateUser = async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    if (req.user.userId !== userId && req.user.role !== 'admin') {
-      return res.status(403).json({ message: "Not authorized to update this user" });
+    if (req.user.userId !== userId && req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this user" });
     }
 
     const updateData = {};
@@ -124,17 +135,19 @@ const updateUser = async (req, res) => {
 
     if (password) {
       if (password.length < 6) {
-        return res.status(400).json({ message: "Password must be at least 6 characters" });
+        return res
+          .status(400)
+          .json({ message: "Password must be at least 6 characters" });
       }
       const saltRounds = 10;
       updateData.password = await bcrypt.hash(password, saltRounds);
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      updateData,
-      { new: true, runValidators: true, select: '-password' }
-    );
+    const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
+      new: true,
+      runValidators: true,
+      select: "-password",
+    });
 
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
@@ -147,7 +160,7 @@ const updateUser = async (req, res) => {
         name: updatedUser.name,
         email: updatedUser.email,
         role: updatedUser.role,
-      }
+      },
     });
   } catch (err) {
     console.error(err);
@@ -155,4 +168,12 @@ const updateUser = async (req, res) => {
   }
 };
 
-module.exports = { signupUser, loginUser, getAllUsers, getUserById, deleteUser, getLoggedInUser, updateUser };
+module.exports = {
+  signupUser,
+  loginUser,
+  getAllUsers,
+  getUserById,
+  deleteUser,
+  getLoggedInUser,
+  updateUser,
+};

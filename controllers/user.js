@@ -15,12 +15,7 @@ const signupUser = async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    const newUser = new User({
-      name,
-      email,
-      password: hashedPassword,
-      role,
-    });
+    const newUser = new User({ name, email, password: hashedPassword, role });
 
     await newUser.save();
     res.status(201).json({ message: "User created successfully", newUser });
@@ -48,10 +43,7 @@ const loginUser = async (req, res) => {
       { expiresIn: "23h" }
     );
 
-    res.status(200).json({
-      message: "Login successful",
-      token: token,
-    });
+    res.status(200).json({ message: "Login successful", token: token });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
@@ -72,7 +64,9 @@ const getLoggedInUser = async (req, res) => {
 const getAllUsers = async (req, res) => {
   try {
     if (req.user.role !== "admin") {
-      return res.status(403).json({ message: "Not authorized to get all users" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to get all users" });
     }
     const allUsers = await User.find({});
     res.status(200).json({ allUsers });
@@ -84,11 +78,15 @@ const getAllUsers = async (req, res) => {
 const getUserById = async (req, res) => {
   const { userId } = req.params;
   try {
+    console.log("token userId:", req.user.userId);
+    console.log("param userId:", userId);
     if (req.user.userId !== userId && req.user.role !== "admin") {
-      return res.status(403).json({ message: "Not authorized to get this user" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to get this user" });
     }
 
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(userId).select("-password");
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }

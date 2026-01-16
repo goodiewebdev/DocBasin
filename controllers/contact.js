@@ -7,12 +7,12 @@ const createContact = async (req, res) => {
   try {
     const newContact = new Contact({
       name,
-      email,
+      email: email.toLowerCase(),
       contactList: contactListId,
     });
 
     if (!email) {
-      res.status(400).json({ message: "Email is required" });
+      return res.status(400).json({ message: "Email is required" });
     }
 
     const contactListExist = await ContactList.findById(contactListId);
@@ -25,6 +25,11 @@ const createContact = async (req, res) => {
         });
     }
 
+    const existingContact = Contact.findOne({ contactList: contactListId, email: email.toLowerCase() });
+    if (existingContact) { 
+        return res.status(400).json({ message: "Contact with this email already exists in the Contact List." });
+    }
+
     await newContact.save();
     res.status(201).json(newContact);
   } catch {
@@ -35,6 +40,14 @@ const createContact = async (req, res) => {
 const getAllContact = async (req, res) => {
   try {
     const allContact = await Contact.find({});
+    const ownerId = allContact.user ? allContact.user.toString() : null;
+    const currentUserId = req.user.userId;
+
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this contact" });
+    }
     res.status(200).json(allContact);
   } catch {
     res.status(500).json({ message: "Server error" });
@@ -48,6 +61,15 @@ const deleteContact = async (req, res) => {
 
     if (!contactToDelete) {
       return res.status(404).json({ message: "Could not find contact" });
+    }
+
+    const ownerId = contactToDelete.user ? contactToDelete.user.toString() : null;
+    const currentUserId = req.user.userId;
+
+    if (ownerId !== currentUserId && req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this contact" });
     }
 
     res
@@ -68,6 +90,15 @@ const getContactById = async (req, res) => {
       return res.status(404).json({ message: "Cannot find contact" });
     }
 
+    const ownerId = contactById.user ? contactById.user.toString() : null;
+    const currentUserId = req.user.userId;
+
+    if (ownerId !== currentUserId && req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this contact" });
+    }
+
     res.status(200).json(contactById);
   } catch (err) {
     res.status(500).json({ message: "Server error" });
@@ -84,7 +115,7 @@ const updateContact = async (req, res) => {
     if (!contact) {
       return res.status(404).json({ message: "Contact not found" });
     }
-    
+
     const contactList = await ContactList.findById(contact.contactList);
 
     if (!contactList) {

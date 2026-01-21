@@ -18,6 +18,8 @@ const createContactList = async (req, res) => {
     });
 
     await newContactList.save();
+
+    newContactList.updatedAt = Date.now();
     res.status(201).json({ message: "New Contact List Added", newContactList });
   } catch (err) {
     console.error("Create Error:", err);
@@ -48,7 +50,9 @@ const getContactListById = async (req, res) => {
         .json({ message: "Not authorized to get this Contact List" });
     }
 
-    const contacts = await Contact.find({ contactList: contactListId });
+    const contacts = await Contact.find({ contactList: contactListId }).sort({
+      createdAt: -1,
+    });
 
     res.json({
       ...contactList.toObject(),
@@ -95,9 +99,8 @@ const deleteContactList = async (req, res) => {
         .json({ message: "Not authorized to get this Contact List" });
     }
 
-    const contactListToDelete = await ContactList.findByIdAndDelete(
-      contactListId
-    );
+    const contactListToDelete =
+      await ContactList.findByIdAndDelete(contactListId);
     if (!contactListToDelete) {
       return res.status(404).json({ message: "Cannot find Contact List" });
     }
@@ -111,28 +114,17 @@ const deleteContactList = async (req, res) => {
 
 const getUserContactLists = async (req, res) => {
   try {
-    const userId = req.user._id;
-
-    const userContactList = await ContactList.find({ user: userId }).sort({
-      createdAt: -1,
-    });
-
-    if (!userContactList) {
-      return res.status(404).json({ message: "No Contact List found" });
-    }
-
-    const ownerId = userContactList.user
-      ? userContactList.user.toString()
-      : null;
     const currentUserId = req.user.userId;
 
-    if (ownerId !== currentUserId && req.user.role !== "admin") {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to get this Contact List" });
+    const userContactLists = await ContactList.find({
+      user: currentUserId,
+    }).sort({ updatedAt: -1 });
+
+    if (!userContactLists || userContactLists.length === 0) {
+      return res.status(404).json({ message: "No Contact Lists found" });
     }
 
-    res.status(200).json(userContactList);
+    res.status(200).json(userContactLists);
   } catch (err) {
     console.error("Failed to fetch user's ContactList:", err);
     res.status(500).json({ message: "Server error." });
@@ -162,7 +154,7 @@ const updateContactList = async (req, res) => {
     const updatedContactList = await ContactList.findByIdAndUpdate(
       contactListId,
       { name },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!updatedContactList) {

@@ -15,22 +15,19 @@ const createContact = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    const contactListExist = await ContactList.findById(contactListId);
+    const contactList = await ContactList.findById(contactListId);
 
-    if (!contactListExist) {
-      return res
-        .status(404)
-        .json({
-          message: "Could not find Contact List, Create a Contact List first.",
-        });
-    }
-
-    const existingContact = Contact.findOne({ contactList: contactListId, email: email.toLowerCase() });
-    if (existingContact) { 
-        return res.status(400).json({ message: "Contact with this email already exists in the Contact List." });
+    if (!contactList) {
+      return res.status(404).json({
+        message: "Could not find Contact List, Create a Contact List first.",
+      });
     }
 
     await newContact.save();
+
+    contactList.updatedAt = Date.now();
+    await contactList.save();
+
     res.status(201).json(newContact);
   } catch {
     res.status(500).json({ message: "Server error" });
@@ -63,7 +60,9 @@ const deleteContact = async (req, res) => {
       return res.status(404).json({ message: "Could not find contact" });
     }
 
-    const ownerId = contactToDelete.user ? contactToDelete.user.toString() : null;
+    const ownerId = contactToDelete.user
+      ? contactToDelete.user.toString()
+      : null;
     const currentUserId = req.user.userId;
 
     if (ownerId !== currentUserId && req.user.role !== "admin") {
@@ -136,7 +135,7 @@ const updateContact = async (req, res) => {
     const updatedContact = await Contact.findByIdAndUpdate(
       contactId,
       { name, email },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!updatedContact) {

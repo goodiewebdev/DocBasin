@@ -95,7 +95,7 @@ const getContactById = async (req, res) => {
     if (ownerId !== currentUserId && req.user.role !== "admin") {
       return res
         .status(403)
-        .json({ message: "Not authorized to update this contact" });
+        .json({ message: "Not authorized to get this contact" });
     }
 
     res.status(200).json(contactById);

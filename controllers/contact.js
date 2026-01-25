@@ -2,12 +2,13 @@ const Contact = require("../models/contact.js");
 const ContactList = require("../models/contactlist.js");
 
 const createContact = async (req, res) => {
-  const { name, email } = req.body;
+  const { name, email, phone } = req.body;
   const { contactListId } = req.params;
   try {
     const newContact = new Contact({
       name,
       email: email.toLowerCase(),
+      phone,
       contactList: contactListId,
     });
 
@@ -21,6 +22,12 @@ const createContact = async (req, res) => {
       return res.status(404).json({
         message: "Could not find Contact List, Create a Contact List first.",
       });
+    }
+
+    const emailexist = await Contact.findOne({ email: email.toLowerCase(), contactList: contactListId });
+
+    if (emailexist) {
+      return res.status(400).json({ message: "Email already exists in this contact list" });
     }
 
     await newContact.save();
@@ -54,48 +61,55 @@ const getAllContact = async (req, res) => {
 const deleteContact = async (req, res) => {
   try {
     const { contactId } = req.params;
-    const contactToDelete = await Contact.findByIdAndDelete(contactId);
 
-    if (!contactToDelete) {
+    const contact = await Contact.findById(contactId);
+
+    if (!contact) {
       return res.status(404).json({ message: "Could not find contact" });
     }
 
-    const ownerId = contactToDelete.user
-      ? contactToDelete.user.toString()
-      : null;
+    const contactList = await ContactList.findById(contact.contactList);
+
+    if (!contactList) {
+      return res.status(404).json({ message: "Associated Contact List not found" });
+    }
+
+    const ownerId = contactList.user?.toString();
     const currentUserId = req.user.userId;
 
     if (ownerId !== currentUserId && req.user.role !== "admin") {
       return res
         .status(403)
-        .json({ message: "Not authorized to update this contact" });
+        .json({ message: "Not authorized to delete this contact" });
     }
 
-    res
-      .status(200)
-      .json({ message: "Contact deleted successfully" }, contactToDelete);
-  } catch {
+    await contact.deleteOne();
+
+    res.status(200).json({ message: "Contact deleted successfully" });
+  } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 const getContactById = async (req, res) => {
   const { contactId } = req.params;
 
   try {
     const contactById = await Contact.findById(contactId);
+    const contactList = await ContactList.findById(contactById.contactList);
 
     if (!contactById) {
       return res.status(404).json({ message: "Cannot find contact" });
     }
 
-    const ownerId = contactById.user ? contactById.user.toString() : null;
+    const ownerId = contactList.user ? contactList.user.toString() : null;
     const currentUserId = req.user.userId;
 
     if (ownerId !== currentUserId && req.user.role !== "admin") {
       return res
         .status(403)
-        .json({ message: "Not authorized to get this contact" });
+        .json({ message: "Not authorized to get this contact", currentUserId, ownerId });
     }
 
     res.status(200).json(contactById);
@@ -106,7 +120,7 @@ const getContactById = async (req, res) => {
 
 const updateContact = async (req, res) => {
   const { contactId } = req.params;
-  const { name, email } = req.body;
+  const { name, email, phone } = req.body;
 
   try {
     const contact = await Contact.findById(contactId);
@@ -134,7 +148,7 @@ const updateContact = async (req, res) => {
 
     const updatedContact = await Contact.findByIdAndUpdate(
       contactId,
-      { name, email },
+      { name, email, phone },
       { new: true, runValidators: true },
     );
 

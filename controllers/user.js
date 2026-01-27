@@ -2,9 +2,12 @@ require("dotenv").config();
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const sanitize = require("../utils/sanitize.js");
 
 const signupUser = async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { password } = req.body;
+  const name = sanitize(req.body.name || "");
+  const email = sanitize(req.body.email || "").toLowerCase();
 
   try {
     const existingUser = await User.findOne({ email });
@@ -15,10 +18,17 @@ const signupUser = async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    const newUser = new User({ name, email: email.toLowerCase(), password: hashedPassword, role });
+    const newUser = new User({
+      name,
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      role: "user",
+    });
 
     await newUser.save();
-    res.status(201).json({ message: "User created successfully", newUser });
+    res
+      .status(201)
+      .json({ message: "User created successfully", email: newUser.email });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
@@ -26,7 +36,8 @@ const signupUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = sanitize(req.body.email || "").toLowerCase();
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: "User not found" });
@@ -77,6 +88,11 @@ const getAllUsers = async (req, res) => {
 
 const getUserById = async (req, res) => {
   const { userId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ message: "Invalid User ID format" });
+  }
+
   try {
     console.log("token userId:", req.user.userId);
     console.log("param userId:", userId);
@@ -128,8 +144,10 @@ const updateUser = async (req, res) => {
     }
 
     const updateData = {};
-    if (name) updateData.name = name;
-    if (email) updateData.email = email;
+
+    if (name) updateData.name = sanitize(name);
+
+    if (email) updateData.email = sanitize(email.toLowerCase());
 
     if (password) {
       if (password.length < 6) {

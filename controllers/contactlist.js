@@ -9,7 +9,7 @@ const createContactList = async (req, res) => {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    const name = req.body.name ? sanitize(req.body.name) : '';
+    const name = req.body.name ? sanitize(req.body.name) : "";
 
     const user = await User.findById(req.user.userId);
     if (!user) {
@@ -137,10 +137,10 @@ const getUserContactLists = async (req, res) => {
 
 const updateContactList = async (req, res) => {
   const { contactListId } = req.params;
-  const { name } = req.body;
 
   try {
     const contactList = await ContactList.findById(contactListId);
+    const name = req.body.name ? sanitize(req.body.name) : contactList.name;
 
     if (!contactList) {
       return res.status(404).json({ message: "Contact List not found" });

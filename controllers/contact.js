@@ -160,6 +160,7 @@ const updateContact = async (req, res) => {
     }
 
     res.status(200).json(updatedContact);
+    contactList.updatedAt = Date.now();
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });

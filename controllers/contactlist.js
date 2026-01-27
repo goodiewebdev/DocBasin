@@ -167,6 +167,25 @@ const updateContactList = async (req, res) => {
   }
 };
 
+const getUserContactListsLatest = async (req, res) => {
+  try {
+    const currentUserId = req.user.userId;
+
+    const userContactLists = await ContactList.findOne({
+      user: currentUserId,
+    }).sort({ updatedAt: -1 });
+
+    if (!userContactLists || userContactLists.length === 0) {
+      return res.status(404).json({ message: "No Contact Lists found" });
+    }
+
+    res.status(200).json(userContactLists);
+  } catch (err) {
+    console.error("Failed to fetch user's ContactList:", err);
+    res.status(500).json({ message: "Server error." });
+  }
+};
+
 module.exports = {
   createContactList,
   getContactListById,
@@ -174,4 +193,5 @@ module.exports = {
   getAllContactList,
   getUserContactLists,
   updateContactList,
+  getUserContactListsLatest,
 };

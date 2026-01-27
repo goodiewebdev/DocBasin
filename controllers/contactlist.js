@@ -1,13 +1,17 @@
 const ContactList = require("../models/contactlist.js");
 const Contact = require("../models/contact.js");
 const User = require("../models/user.js");
+const sanitize = require("../utils/sanitize.js");
 
 const createContactList = async (req, res) => {
-  const { name } = req.body;
-
   try {
-    const user = await User.findById(req.user.userId);
+    if (!req.user || !req.user.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
 
+    const name = req.body.name ? sanitize(req.body.name) : '';
+
+    const user = await User.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -18,8 +22,8 @@ const createContactList = async (req, res) => {
     });
 
     await newContactList.save();
-
     newContactList.updatedAt = Date.now();
+
     res.status(201).json({ message: "New Contact List Added", newContactList });
   } catch (err) {
     console.error("Create Error:", err);

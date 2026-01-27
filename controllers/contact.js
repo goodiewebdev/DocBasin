@@ -126,36 +126,33 @@ const getContactById = async (req, res) => {
 
 const updateContact = async (req, res) => {
   const { contactId } = req.params;
-  const { name, email, phone } = req.body;
 
   try {
     const contact = await Contact.findById(contactId);
-
     if (!contact) {
       return res.status(404).json({ message: "Contact not found" });
     }
 
     const contactList = await ContactList.findById(contact.contactList);
-
     if (!contactList) {
-      return res
-        .status(404)
-        .json({ message: "Associated Contact List not found" });
+      return res.status(404).json({ message: "Associated Contact List not found" });
     }
 
     const ownerId = contactList.user ? contactList.user.toString() : null;
     const currentUserId = req.user.userId;
 
     if (ownerId !== currentUserId && req.user.role !== "admin") {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to update this contact" });
+      return res.status(403).json({ message: "Not authorized to update this contact" });
     }
+
+    const name = req.body.name ? sanitize(req.body.name) : contact.name;
+    const email = req.body.email ? sanitize(req.body.email).toLowerCase() : contact.email;
+    const phone = req.body.phone ? sanitize(req.body.phone) : contact.phone;
 
     const updatedContact = await Contact.findByIdAndUpdate(
       contactId,
       { name, email, phone },
-      { new: true, runValidators: true },
+      { new: true, runValidators: true }
     );
 
     if (!updatedContact) {
@@ -164,9 +161,11 @@ const updateContact = async (req, res) => {
 
     res.status(200).json(updatedContact);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 module.exports = {
   createContact,

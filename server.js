@@ -8,11 +8,27 @@ const app = express();
 const PORT = process.env.PORT || 7000;
 const mongodb_url = process.env.MONGO_URI;
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://docbasin-f.vercel.app",
+];
+
 app.use(express.json());
-app.use(cors({
-  origin: true,
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS blocked: " + origin));
+      }
+    },
+    credentials: true,
+  })
+);
+
 
 const userRoutes = require("./routes/user.js");
 const contactListRoutes = require("./routes/contactlist.js");

@@ -1,45 +1,51 @@
 const Contact = require("../models/contact.js");
 const ContactList = require("../models/contactlist.js");
+const sanitize = require("../utils/sanitize.js");
 
 const createContact = async (req, res) => {
-  const { name, email, phone } = req.body;
-  const { contactListId } = req.params;
   try {
-    const newContact = new Contact({
-      name,
-      email: email.toLowerCase(),
-      phone,
-      contactList: contactListId,
-    });
+    const name = sanitize(req.body.name || "");
+    const email = sanitize(req.body.email || "").toLowerCase();
+    const phone = sanitize(req.body.phone || "");
+    const { contactListId } = req.params;
 
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
     }
 
     const contactList = await ContactList.findById(contactListId);
-
     if (!contactList) {
       return res.status(404).json({
-        message: "Could not find Contact List, Create a Contact List first.",
+        message: "Could not find Contact List, create one first.",
       });
     }
 
-    const emailexist = await Contact.findOne({ email: email.toLowerCase(), contactList: contactListId });
-
+    const emailexist = await Contact.findOne({
+      email,
+      contactList: contactListId,
+    });
     if (emailexist) {
       return res.status(400).json({ message: "Email already exists in this contact list" });
     }
 
+    const newContact = new Contact({
+      name,
+      email,
+      phone,
+      contactList: contactListId,
+    });
     await newContact.save();
 
     contactList.updatedAt = Date.now();
     await contactList.save();
 
     res.status(201).json(newContact);
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 const getAllContact = async (req, res) => {
   try {

@@ -6,7 +6,7 @@ const sanitize = require("../utils/sanitize.js");
 const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
 const fromEmail = process.env.RESEND_FROM_EMAIL;
-const toEmailAddress = process.env.ToEmailAddress
+const toEmailAddress = process.env.ToEmailAddress;
 const crypto = require("crypto");
 
 const signupUser = async (req, res) => {
@@ -218,7 +218,9 @@ const verifyEmail = async (req, res) => {
   const { verificationId } = req.params;
 
   try {
-    const userMatch = await User.findOne({ emailVerificationToken: verificationId });
+    const userMatch = await User.findOne({
+      emailVerificationToken: verificationId,
+    });
     if (!userMatch) {
       return res.status(400).json({ message: "Could not verify user" });
     }
@@ -232,7 +234,6 @@ const verifyEmail = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 module.exports = {
   signupUser,

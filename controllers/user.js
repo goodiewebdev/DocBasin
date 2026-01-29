@@ -3,11 +3,38 @@ const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const sanitize = require("../utils/sanitize.js");
+const { Resend } = require("resend");
+const resend = new Resend(process.env.RESEND_API_KEY);
+const fromEmail = process.env.RESEND_FROM_EMAIL;
+const toEmailAddress = process.env.ToEmailAddress
+const crypto = require("crypto");
 
 const signupUser = async (req, res) => {
   const { password } = req.body;
   const name = sanitize(req.body.name || "");
   const email = sanitize(req.body.email || "").toLowerCase();
+  const emailVerificationToken = crypto.randomBytes(32).toString("hex");
+
+  const verificationURL = `https://docbasin.onrender.com/api/users/verify/${emailVerificationToken}`;
+
+  const sendVerificationEmail = async (emailVerificationToken) => {
+    try {
+      const response = await resend.emails.send({
+        from: fromEmail,
+        to: [toEmailAddress],
+        subject: "Test Verification",
+        html: `<strong>Verification Link:</strong> ${verificationURL}`,
+      });
+
+      if (response.error) {
+        console.error("Resend API Error:", response.error);
+      } else {
+        console.log("Resend Success! ID:", response.data.id);
+      }
+    } catch (err) {
+      console.error("Network/Code Error:", err);
+    }
+  };
 
   try {
     const existingUser = await User.findOne({ email });
@@ -23,9 +50,12 @@ const signupUser = async (req, res) => {
       email: email.toLowerCase(),
       password: hashedPassword,
       role: "user",
+      emailVerificationToken,
+      isEmailVerified: false,
     });
 
     await newUser.save();
+    await sendVerificationEmail(emailVerificationToken);
     res
       .status(201)
       .json({ message: "User created successfully", email: newUser.email });
@@ -184,6 +214,26 @@ const updateUser = async (req, res) => {
   }
 };
 
+const verifyEmail = async (req, res) => {
+  const { verificationId } = req.params;
+
+  try {
+    const userMatch = await User.findOne({ emailVerificationToken: verificationId });
+    if (!userMatch) {
+      return res.status(400).json({ message: "Could not verify user" });
+    }
+
+    userMatch.isEmailVerified = true;
+    userMatch.emailVerificationToken = undefined;
+    await userMatch.save();
+
+    res.status(200).json({ message: "Email verified successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
 module.exports = {
   signupUser,
   loginUser,
@@ -192,4 +242,5 @@ module.exports = {
   deleteUser,
   getLoggedInUser,
   updateUser,
+  verifyEmail,
 };

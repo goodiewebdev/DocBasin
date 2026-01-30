@@ -15,7 +15,7 @@ const signupUser = async (req, res) => {
   const email = sanitize(req.body.email || "").toLowerCase();
   const emailVerificationToken = crypto.randomBytes(32).toString("hex");
 
-  const verificationURL = `https://docbasin-f.vercel.app/verify/${emailVerificationToken}`;
+  const verificationURL = `https://docbasin-f.vercel.app/verifyuser/${emailVerificationToken}`;
 
   const sendVerificationEmail = async (emailVerificationToken) => {
     try {

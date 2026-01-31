@@ -19,12 +19,25 @@ const userSchema = new mongoose.Schema({
     default: "user",
     enum: ["user", "admin"],
   },
-  isEmailVerified: {
+  verifyOtp: {
+    type: String,
+    default: "",
+  },
+  verifyOtpExpireAt: {
+    type: Number,
+    default: 0,
+  },
+  isAccountVerified: {
     type: Boolean,
     default: false,
   },
-  emailVerificationToken: {
+  resetOtp: {
     type: String,
+    default: "",
+  },
+  resetOtpExpireAt: {
+    type: Number,
+    default: 0,
   },
   createdAt: {
     type: Date,

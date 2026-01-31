@@ -7,34 +7,11 @@ const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
 const fromEmail = process.env.RESEND_FROM_EMAIL;
 const toEmailAddress = process.env.ToEmailAddress;
-const crypto = require("crypto");
 
 const signupUser = async (req, res) => {
   const { password } = req.body;
   const name = sanitize(req.body.name || "");
   const email = sanitize(req.body.email || "").toLowerCase();
-  const emailVerificationToken = crypto.randomBytes(32).toString("hex");
-
-  const verificationURL = `https://docbasin-f.vercel.app/verifyuser/${emailVerificationToken}`;
-
-  const sendVerificationEmail = async (emailVerificationToken) => {
-    try {
-      const response = await resend.emails.send({
-        from: fromEmail,
-        to: [toEmailAddress],
-        subject: "Test Verification",
-        html: `<strong>Verification Link:</strong> ${verificationURL}`,
-      });
-
-      if (response.error) {
-        console.error("Resend API Error:", response.error);
-      } else {
-        console.log("Resend Success! ID:", response.data.id);
-      }
-    } catch (err) {
-      console.error("Network/Code Error:", err);
-    }
-  };
 
   try {
     const existingUser = await User.findOne({ email });
@@ -50,12 +27,9 @@ const signupUser = async (req, res) => {
       email: email.toLowerCase(),
       password: hashedPassword,
       role: "user",
-      emailVerificationToken,
-      isEmailVerified: false,
     });
 
     await newUser.save();
-    await sendVerificationEmail(emailVerificationToken);
     res
       .status(201)
       .json({ message: "User created successfully", email: newUser.email });
@@ -214,24 +188,199 @@ const updateUser = async (req, res) => {
   }
 };
 
-const verifyEmail = async (req, res) => {
-  const { verificationId } = req.params;
-
+const sendVerifyOtp = async (req, res) => {
   try {
-    const userMatch = await User.findOne({
-      emailVerificationToken: verificationId,
-    });
-    if (!userMatch) {
-      return res.status(400).json({ message: "Could not verify user" });
+    const userId = req.user.userId;
+
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User ID is required" });
     }
 
-    userMatch.isEmailVerified = true;
-    userMatch.emailVerificationToken = undefined;
-    await userMatch.save();
+    const user = await User.findById(userId);
 
-    res.status(200).json({ message: "Email verified successfully" });
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    if (user.isAccountVerified) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Account already verified" });
+    }
+
+    const otp = String(Math.floor(100000 + Math.random() * 90000));
+
+    user.verifyOtp = otp;
+    user.verifyOtpExpireAt = Date.now() + 24 * 60 * 60 * 1000; // OTP valid for 10 minutes
+    await user.save();
+
+    const sendVerificationEmail = async () => {
+      try {
+        const response = await resend.emails.send({
+          from: fromEmail,
+          to: [toEmailAddress],
+          subject: "Test Verification",
+          html: `<strong>Verification OTP:</strong> ${otp}`,
+        });
+
+        if (response.error) {
+          console.error("Resend API Error:", response.error);
+        } else {
+          console.log("Resend Success! ID:", response.data.id);
+        }
+      } catch (err) {
+        console.error("Network/Code Error:", err);
+      }
+    };
+
+    await sendVerificationEmail();
+    return res.status(200).json({
+      success: true,
+      message: "Verification OTP sent Email successfully",
+    });
+  } catch (error) {
+    console.error("Error sending verification OTP:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const verifyEmail = async (req, res) => {
+  const { otp } = req.body;
+  const userId = req.user.userId;
+
+  if (!userId || !otp) {
+    return res.status(400).json({ success: false, message: "Missing Details" });
+  }
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    if (user.verifyOtp === "" || user.verifyOtp !== otp) {
+      console.log(
+        "OTP mismatch:",
+        !user.verifyOtp === "",
+        user.verifyOtp !== otp,
+      );
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    if (user.verifyOtpExpireAt < Date.now()) {
+      return res.status(400).json({ success: false, message: "OTP expired" });
+    }
+
+    user.isAccountVerified = true;
+    user.verifyOtp = "";
+    user.verifyOtpExpireAt = 0;
+
+    await user.save();
+
+    return res
+      .status(200)
+      .json({ success: true, message: "Email verified successfully" });
+  } catch (error) {
+    console.error("Error verifying email:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const sendResetOtp = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Email is required" });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    const otp = String(Math.floor(100000 + Math.random() * 90000));
+
+    user.resetOtp = otp;
+    user.resetOtpExpireAt = Date.now() + 15 * 60 * 1000; // OTP valid for 15 minutes
+
+    await user.save();
+
+    const sendVerificationEmail = async () => {
+      try {
+        const response = await resend.emails.send({
+          from: fromEmail,
+          to: [toEmailAddress],
+          subject: "Test Verification",
+          html: `<strong>Verification OTP:</strong> ${otp}`,
+        });
+
+        if (response.error) {
+          console.error("Resend API Error:", response.error);
+        } else {
+          console.log("Resend Success! ID:", response.data.id);
+        }
+      } catch (err) {
+        console.error("Network/Code Error:", err);
+      }
+    };
+
+    await sendVerificationEmail();
+    return res
+      .status(200)
+      .json({ success: true, message: "Password reset OTP sent successfully" });
+  } catch (error) {
+    console.error("Error sending password reset OTP:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Email, OTP, and new password are required",
+    });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    if (user.resetOtp === "" || user.resetOtp !== otp) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    if (user.resetOtpExpireAt < Date.now()) {
+      return res.status(400).json({ success: false, message: "expired OTP" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.resetOtp = "";
+    user.resetOtpExpireAt = 0;
+
+    await user.save();
+
+    return res
+      .status(200)
+      .json({ success: true, message: "Password has been reset successfully" });
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -243,5 +392,8 @@ module.exports = {
   deleteUser,
   getLoggedInUser,
   updateUser,
+  sendVerifyOtp,
   verifyEmail,
+  sendResetOtp,
+  resetPassword,
 };

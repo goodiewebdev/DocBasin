@@ -1,6 +1,10 @@
 const Contact = require("../models/contact.js");
 const ContactList = require("../models/contactlist.js");
 const sanitize = require("../utils/sanitize.js");
+const { Resend } = require("resend");
+const resend = new Resend(process.env.RESEND_API_KEY);
+const fromEmail = process.env.RESEND_FROM_EMAIL;
+const toEmailAddress = process.env.ToEmailAddress;
 
 const createContact = async (req, res) => {
   try {
@@ -38,6 +42,32 @@ const createContact = async (req, res) => {
 
     contactList.updatedAt = Date.now();
     await contactList.save();
+
+    const contactAddedEmail = async () => {
+      try {
+        const response = await resend.emails.send({
+          from: fromEmail,
+          to: [toEmailAddress],
+          subject: `New Contact Added In ${contactList.name}`,
+          html: `<strong>
+          Name: ${name} <br />
+          Email: ${email} <br />
+          Phone: ${phone} <br />
+          ContactList: ${contactList.name} <br />
+          </strong>`,
+        });
+
+        if (response.error) {
+          console.error("Resend API Error:", response.error);
+        } else {
+          console.log("Resend Success! ID:", response.data.id);
+        }
+      } catch (err) {
+        console.error("Network/Code Error:", err);
+      }
+    };
+
+    contactAddedEmail();
 
     res.status(201).json(newContact);
   } catch (err) {

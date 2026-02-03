@@ -10,7 +10,13 @@ const {
   updateContact,
 } = require("../controllers/contact.js");
 
-router.post("/:contactListId", cors(), createContact);
+const publicCors = cors({
+  origin: "*",
+  methods: ["POST", "OPTIONS"],
+});
+
+router.options("/:contactListId", publicCors); 
+router.post("/:contactListId", publicCors, createContact);
 router.get("/", auth, getAllContact);
 router.delete("/:contactId", auth, deleteContact);
 router.get("/:contactId", auth, getContactById);

@@ -27,7 +27,6 @@ const signupUser = async (req, res) => {
       email: email.toLowerCase(),
       password: hashedPassword,
       role: "user",
-      notificationEmail: email,
     });
 
     await newUser.save();
@@ -139,7 +138,7 @@ const deleteUser = async (req, res) => {
 
 const updateUser = async (req, res) => {
   const { userId } = req.params;
-  const { name, email, password, notificationEmail } = req.body;
+  const { name, email, password } = req.body;
 
   try {
     if (req.user.userId !== userId && req.user.role !== "admin") {
@@ -153,8 +152,6 @@ const updateUser = async (req, res) => {
     if (name) updateData.name = sanitize(name);
 
     if (email) updateData.email = sanitize(email.toLowerCase());
-
-    if (notificationEmail) updateData.notificationEmail = sanitize(notificationEmail.toLowerCase());
 
     if (password) {
       if (password.length < 6) {
@@ -183,7 +180,6 @@ const updateUser = async (req, res) => {
         name: updatedUser.name,
         email: updatedUser.email,
         role: updatedUser.role,
-        notificationEmail: updatedUser.notificationEmail,
       },
     });
   } catch (err) {

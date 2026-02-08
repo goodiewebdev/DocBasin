@@ -19,6 +19,7 @@ const createContactList = async (req, res) => {
     const newContactList = new ContactList({
       name,
       user: user._id,
+      notificationEmail: user.email
     });
 
     await newContactList.save();
@@ -141,6 +142,7 @@ const updateContactList = async (req, res) => {
   try {
     const contactList = await ContactList.findById(contactListId);
     const name = req.body.name ? sanitize(req.body.name) : contactList.name;
+    const notificationEmail = req.body.notificationEmail ? sanitize(req.body.notificationEmail) : contactList.notificationEmail;
 
     if (!contactList) {
       return res.status(404).json({ message: "Contact List not found" });
@@ -157,7 +159,7 @@ const updateContactList = async (req, res) => {
 
     const updatedContactList = await ContactList.findByIdAndUpdate(
       contactListId,
-      { name },
+      { name, notificationEmail },
       { new: true, runValidators: true },
     );
 

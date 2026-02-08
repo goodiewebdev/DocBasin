@@ -16,6 +16,11 @@ const contactListSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    notificationEmail: {
+    type: String,
+    lowercase: true,
+    trim: true,
+  },
   },
   {
     timestamps: true,

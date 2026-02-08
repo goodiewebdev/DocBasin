@@ -12,6 +12,9 @@ const ContactSchema = new mongoose.Schema({
   phone: {
     type: Number,
   },
+  message: {
+    type: String,
+  },
   contactList: {
     type: mongoose.Schema.ObjectId,
     ref: "ContactList",

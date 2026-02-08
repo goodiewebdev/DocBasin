@@ -11,6 +11,7 @@ const createContact = async (req, res) => {
     const name = sanitize(req.body.name || "");
     const email = sanitize(req.body.email || "").toLowerCase();
     const phone = sanitize(req.body.phone || "");
+    const message = sanitize(req.body.message || "");
     const { contactListId } = req.params;
 
     if (!email) {
@@ -36,6 +37,7 @@ const createContact = async (req, res) => {
       name,
       email,
       phone,
+      message,
       contactList: contactListId,
     });
     await newContact.save();

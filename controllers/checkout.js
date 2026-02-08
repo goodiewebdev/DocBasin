@@ -1,4 +1,4 @@
-import { Checkout } from "@polar-sh/express";
+const { Checkout } = require("@polar-sh/express");
 
 export const createCheckoutSession = Checkout((req) => {
   const { 

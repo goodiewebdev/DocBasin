@@ -1,6 +1,6 @@
 const { Checkout } = require("@polar-sh/express");
 
-export const createCheckoutSession = Checkout((req) => {
+const createCheckoutSession = Checkout((req) => {
   const { 
     products, 
     customerId,
@@ -26,3 +26,5 @@ export const createCheckoutSession = Checkout((req) => {
     metadata: parsedMetadata,
   };
 });
+
+module.exports = { createCheckoutSession };

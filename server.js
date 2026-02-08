@@ -31,10 +31,12 @@ app.use(
 const userRoutes = require("./routes/user.js");
 const contactListRoutes = require("./routes/contactlist.js");
 const contactRoutes = require("./routes/contact.js");
+const checkoutRoute = require("./routes/checkout.js");
 
 app.use("/api/users", userRoutes);
 app.use("/api/contactlist", contactListRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/checkout", checkoutRoute);
 
 mongoose
   .connect(mongodb_url)

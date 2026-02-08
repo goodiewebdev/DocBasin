@@ -14,6 +14,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  notificationEmail: {
+    type: String,
+    lowercase: true,
+    trim: true,
+  },
   role: {
     type: String,
     default: "user",

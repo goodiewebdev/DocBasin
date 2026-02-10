@@ -8,6 +8,7 @@ const {
   deleteContact,
   getContactById,
   updateContact,
+  getContactListStats,
 } = require("../controllers/contact.js");
 
 const publicCors = cors({
@@ -18,6 +19,7 @@ const publicCors = cors({
 router.options("/:contactListId", publicCors); 
 router.post("/:contactListId", publicCors, createContact);
 router.get("/", auth, getAllContact);
+router.get("/stats/:contactListId", auth, getContactListStats);
 router.delete("/:contactId", auth, deleteContact);
 router.get("/:contactId", auth, getContactById);
 router.put("/:contactId", auth, updateContact);

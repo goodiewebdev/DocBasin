@@ -199,6 +199,41 @@ const updateContact = async (req, res) => {
   }
 };
 
+const getContactListStats = async (req, res) => {
+  const { contactListId } = req.params;
+
+  try {
+    const contactList = await ContactList.findById(contactListId);
+    if (!contactList) return res.status(404).json({ message: "List not found" });
+
+    if (contactList.user.toString() !== req.user.userId && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const now = new Date();
+    const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [dayStats, weekStats, monthStats, totalStats] = await Promise.all([
+      Contact.countDocuments({ contactList: contactListId, createdAt: { $gte: startOfDay } }),
+      Contact.countDocuments({ contactList: contactListId, createdAt: { $gte: startOfWeek } }),
+      Contact.countDocuments({ contactList: contactListId, createdAt: { $gte: startOfMonth } }),
+      Contact.countDocuments({ contactList: contactListId })
+    ]);
+
+    res.status(200).json({
+      today: dayStats,
+      thisWeek: weekStats,
+      thisMonth: monthStats,
+      total: totalStats
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 module.exports = {
   createContact,
@@ -206,4 +241,5 @@ module.exports = {
   deleteContact,
   getContactById,
   updateContact,
+  getContactListStats,
 };

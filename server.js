@@ -14,6 +14,11 @@ const allowedOrigins = [
 ];
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(
+  "/api/contact/:contactListId",
+  cors({ origin: "*" })
+);
 app.use(
   cors({
     origin: function (origin, callback) {

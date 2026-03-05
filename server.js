@@ -52,3 +52,5 @@ mongoose
   .catch((err) => {
     console.error("MongoDB connection error:", err.message);
   });
+
+app.get('/api/ping', (req, res) => res.status(200).send('OK'));

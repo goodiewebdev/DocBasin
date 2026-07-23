@@ -15,36 +15,47 @@ const allowedOrigins = [
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(
-  cors({
+
+
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/f/submissions")) {
+    return cors({
+      origin: "*",
+      methods: ["POST", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Accept"],
+    })(req, res, next);
+  }
+
+  return cors({
     origin: function (origin, callback) {
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(null, false); 
+        callback(null, false);
       }
     },
     credentials: true,
-  })
-);
-
+  })(req, res, next);
+});
 
 const userRoutes = require("./routes/user.js");
-const contactListRoutes = require("./routes/contactlist.js");
-const contactRoutes = require("./routes/contact.js");
+const formRoutes = require("./routes/form.js");
+const submissionRoutes = require("./routes/submission.js");
 const checkoutRoute = require("./routes/checkout.js");
 
 app.use("/api/users", userRoutes);
-app.use("/api/contactlist", contactListRoutes);
-app.use("/api/contact", contactRoutes);
+app.use("/api/forms", formRoutes);
+app.use("/api/f/submissions", submissionRoutes);
 app.use("/api/checkout", checkoutRoute);
 
+// Health Check
+app.get("/api/ping", (req, res) => res.status(200).send("OK"));
+
+// Database Connection & Server Startup
 mongoose
   .connect(mongodb_url)
-  //.connect("mongodb://localhost:27017/docBasinBackend")
   .then(() => {
     console.log("Connected to MongoDB Atlas");
-
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
@@ -52,5 +63,3 @@ mongoose
   .catch((err) => {
     console.error("MongoDB connection error:", err.message);
   });
-
-app.get('/api/ping', (req, res) => res.status(200).send('OK'));

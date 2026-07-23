@@ -1,6 +1,6 @@
 const Form = require("../models/form");
 const Submission = require("../models/submission");
-const User = require("../models/User");
+const User = require("../models/user");
 const sanitize = require("../utils/sanitize");
 
 const createForm = async (req, res) => {

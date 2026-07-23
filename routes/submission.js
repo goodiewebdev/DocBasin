@@ -17,12 +17,11 @@ const publicCors = cors({
   allowedHeaders: ["Content-Type", "Accept"],
 });
 
-router.options("/f/:formId", publicCors);
-router.post("/f/:formId", publicCors, submitToForm);
+router.options("/:formId", publicCors);
+router.post("/:formId", publicCors, submitToForm);
 
 router.get("/stats/:formId", auth, getFormStats);
 router.get("/form/:formId", auth, getFormSubmissions);
-
 router.get("/:submissionId", auth, getSubmissionById);
 router.delete("/:submissionId", auth, deleteSubmission);
 

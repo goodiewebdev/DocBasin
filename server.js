@@ -45,7 +45,7 @@ const checkoutRoute = require("./routes/checkout.js");
 
 app.use("/api/users", userRoutes);
 app.use("/api/forms", formRoutes);
-app.use("/api/f/submissions", submissionRoutes);
+app.use("/api/f", submissionRoutes);
 app.use("/api/checkout", checkoutRoute);
 
 // Health Check

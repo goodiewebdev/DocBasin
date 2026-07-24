@@ -67,9 +67,9 @@ const submitToForm = async (req, res) => {
       }).catch((emailErr) => console.error("Resend API Error:", emailErr));
     }
 
-    if (req.headers["accept"]?.includes("text/html")) {
-      return res.redirect(redirectUrl || "https://formspree.io/thanks");
-    }
+    {/* if (req.headers["accept"]?.includes("text/html")) {
+      return res.redirect(redirectUrl || "");
+    } */}
 
     res.status(201).json({
       message: "Submission received successfully",
